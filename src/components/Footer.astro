@@ -1,0 +1,33 @@
+---
+import Social from "./Social.astro";
+
+const platforms = [
+	{ link: "https://github.com/YegorKochetkov", label: "GitHub" },
+	{ link: "https://twitter.com/kegor", label: "Twitter" },
+	{
+		link: "https://www.linkedin.com/in/yegor-kochetkov-299b35222/",
+		label: "LinkedIn",
+	},
+];
+---
+
+<style>
+	footer {
+		& ul {
+			display: flex;
+			gap: 1rem;
+		}
+	}
+</style>
+
+<footer>
+	<ul>
+		{
+			platforms.map((platform) => (
+				<li>
+					<Social platform={platform.link} label={platform.label} />
+				</li>
+			))
+		}
+	</ul>
+</footer>
