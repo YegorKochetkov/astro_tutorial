@@ -1,5 +1,5 @@
 ---
-import Navigation from "../components/Navigation.astro";
+import Header from "../components/Header.astro";
 import "../styles/global.css";
 
 const pageTitle = "About Me";
@@ -11,7 +11,15 @@ const identity = {
 	hobbies: ["trading", "anime", "transerfing"],
 };
 
-const skills = ["HTML", "CSS", "JavaScript", "TypeScript", "React"];
+const skills = [
+	"HTML",
+	"CSS",
+	"JavaScript",
+	"TypeScript",
+	"React",
+	"HTMX",
+	"Qwik",
+];
 
 const finished = false;
 const happy = true;
@@ -50,7 +58,7 @@ const textTransform = "uppercase";
 		</style>
 	</head>
 	<body>
-		<Navigation />
+		<Header />
 		<h1>Astro tutorial</h1>
 		<h2>{pageTitle}</h2>
 		<p>Here are a few facts about me:</p>
