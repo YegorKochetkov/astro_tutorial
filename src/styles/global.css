@@ -39,14 +39,14 @@ li {
 	width: 40px;
 	height: 5px;
 	margin-bottom: 10px;
-	background-color: #ff9776;
+	background-color: purple;
 }
 
 .nav-links {
 	width: 100%;
 	top: 5rem;
 	left: 48px;
-	background-color: #ff9776;
+	background-color: plum;
 	display: none;
 	margin: 0;
 }
@@ -63,7 +63,7 @@ li {
 
 .nav-links li a:hover,
 .nav-links li a:focus {
-	background-color: #ff9776;
+	background-color: plum;
 }
 
 .expanded {
