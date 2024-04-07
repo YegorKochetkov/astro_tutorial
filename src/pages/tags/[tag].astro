@@ -5,7 +5,7 @@ import BlogPost from "../../components/BlogPost.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 export async function getStaticPaths() {
-	const allPosts: MarkdownInstance<Record<string, any>>[] =
+	const allPosts: MarkdownInstance<Record<string, string>>[] =
 		await Astro.glob("../posts/*.md");
 	const uniqueTags = new Set(allPosts.flatMap((post) => post.frontmatter.tags));
 
