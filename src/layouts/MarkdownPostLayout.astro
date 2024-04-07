@@ -10,8 +10,20 @@ const { frontmatter } = Astro.props;
 		{new Date(frontmatter.pubDate).toDateString()}
 	</time>
 	<p>Written by {frontmatter.author}</p>
+
+	<ul class="tags">
+		{
+			frontmatter.tags.map((tag: string) => (
+				<li class="tag">
+					<a href={`/tags/${tag}`}>{tag}</a>
+				</li>
+			))
+		}
+	</ul>
+
 	<h2>{frontmatter.description}</h2>
 	<img src={frontmatter.image.url} width="300" alt={frontmatter.image.alt} />
+
 	<slot />
 </BaseLayout>
 
