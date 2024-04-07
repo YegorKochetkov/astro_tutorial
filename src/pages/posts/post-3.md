@@ -2,11 +2,11 @@
 layout: "../../layouts/MarkdownPostLayout.astro"
 title: "My third blog post"
 author: "Yegor"
+pubDate: "2024-04-7"
 description: "I had some challenges, but asking in the community really helped!"
 image:
-    url: "https://docs.astro.build/assets/rays.webp"
-    alt: "Thumbnail of Astro rays."
-pubDate: 2024-04-7
+  url: "https://docs.astro.build/assets/rays.webp"
+  alt: "Thumbnail of Astro rays."
 tags: ["astro", "learning in public", "setbacks", "community"]
 ---
 
