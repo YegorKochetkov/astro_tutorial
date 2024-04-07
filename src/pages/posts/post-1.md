@@ -1,19 +1,14 @@
 ---
+layout: "../../layouts/MarkdownPostLayout.astro"
 title: "My first blog post"
 pubDate: 2024-04-05
-description: "My first blog post"
+description: "Welcome to my new blog about learning Astro!"
 author: "Yegor"
 image:
   url: "https://docs.astro.build/assets/full-logo-light.png"
   alt: "Astro logo"
 tags: ["astro", "blogging", "learning in public"]
 ---
-
-## My first blog post
-
-Published on 2024-04-05
-
-Welcome to my _new blog_ about learning Astro!
 
 ## What I've accomplished
 

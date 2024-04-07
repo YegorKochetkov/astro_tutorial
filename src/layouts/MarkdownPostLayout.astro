@@ -1,0 +1,21 @@
+---
+import "../styles/global.css";
+
+const { frontmatter } = Astro.props;
+---
+
+<h1>{frontmatter.title}</h1>
+<time datetime="{frontmatter.pubDate}">
+	Published on:
+	{new Date(frontmatter.pubDate).toDateString()}
+</time>
+<p>Written by {frontmatter.author}</p>
+<h2>{frontmatter.description}</h2>
+<img src={frontmatter.image.url} width="300" alt={frontmatter.image.alt} />
+<slot />
+
+<style>
+	img {
+		background-color: plum;
+	}
+</style>
