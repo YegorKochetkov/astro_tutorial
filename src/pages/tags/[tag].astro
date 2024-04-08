@@ -3,15 +3,15 @@ import type { MarkdownInstance } from "astro";
 
 import BlogPost from "../../components/BlogPost.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
 
 export async function getStaticPaths() {
-	const allPosts: MarkdownInstance<Record<string, string>>[] =
-		await Astro.glob("../posts/*.md");
-	const uniqueTags = new Set(allPosts.flatMap((post) => post.frontmatter.tags));
+	const allPosts = await getCollection("posts");
+	const uniqueTags = new Set(allPosts.flatMap((post) => post.data.tags));
 
 	return [...uniqueTags].map((tag) => {
 		const filteredByTagsPosts = allPosts.filter((post) =>
-			post.frontmatter.tags.includes(tag),
+			post.data.tags.includes(tag),
 		);
 
 		return {
@@ -32,7 +32,7 @@ const { posts } = Astro.props;
 	<ul>
 		{
 			posts.map((post) => (
-				<BlogPost url={post.url} title={post.frontmatter.title} />
+				<BlogPost url={`/posts/${post.slug}/`} title={post.data.title} />
 			))
 		}
 	</ul>
