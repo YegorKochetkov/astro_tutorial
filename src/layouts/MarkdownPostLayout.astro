@@ -1,4 +1,6 @@
 ---
+import { fade } from "astro:transitions";
+
 import BaseLayout from "../layouts/BaseLayout.astro";
 
 const { frontmatter } = Astro.props;
@@ -9,7 +11,7 @@ const { frontmatter } = Astro.props;
 		Published on:
 		{new Date(frontmatter.pubDate).toDateString()}
 	</time>
-	<p>Written by {frontmatter.author}</p>
+	<p>Written by <a href="/about/" data-astro-reload>{frontmatter.author}</a></p>
 
 	<ul class="tags">
 		{
@@ -21,7 +23,9 @@ const { frontmatter } = Astro.props;
 		}
 	</ul>
 
-	<h2>{frontmatter.description}</h2>
+	<h2 transition:animate={fade({ duration: "0.5s" })}>
+		{frontmatter.description}
+	</h2>
 	<img src={frontmatter.image.url} width="300" alt={frontmatter.image.alt} />
 
 	<slot />
