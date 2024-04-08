@@ -21,16 +21,23 @@ const skills = [
 const finished = true;
 const happy = true;
 
-const skillColor = "navy";
+const skillColorLight = "navy";
+const skillColorDark = "biege";
 const fontWeight = "bold";
 const textTransform = "uppercase";
 ---
 
-<style define:vars={{ skillColor, fontWeight, textTransform }}>
+<style
+	define:vars={{ skillColorLight, skillColorDark, fontWeight, textTransform }}
+>
 	.skill {
-		color: var(--skillColor);
+		color: var(--skillColorLight);
 		font-weight: var(--fontWeight);
 		text-transform: var(--textTransform);
+	}
+
+	:global(.dark) .skill {
+		color: var(--skillColorDark);
 	}
 </style>
 
