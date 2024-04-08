@@ -1,13 +1,24 @@
 html {
 	background-color: #f1f5f9;
 	font-family: sans-serif;
+
+	&.dark {
+		background-color: #0d0950;
+		color: #fff;
+
+		& a {
+			color: beige;
+		}
+	}
 }
 
 body {
-	margin: 0 auto;
 	width: 100%;
+
+	margin: 0 auto;
 	max-width: 80ch;
 	padding: 1rem;
+
 	line-height: 1.5;
 }
 
@@ -29,8 +40,18 @@ li {
 	list-style: none;
 }
 
+button {
+	cursor: pointer;
+}
+
 .hamburger {
-	padding-right: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	align-content: space-around;
+
+	padding: 0.5rem;
+	margin-inline-end: 1.5rem;
 	cursor: pointer;
 }
 
@@ -38,27 +59,31 @@ li {
 	display: block;
 	width: 40px;
 	height: 5px;
-	margin-bottom: 10px;
+
 	background-color: purple;
 }
 
 .nav-links {
-	width: 100%;
+	display: none;
 	top: 5rem;
 	left: 48px;
-	background-color: plum;
-	display: none;
+
+	width: 100%;
 	margin: 0;
+
+	background-color: plum;
 }
 
 .nav-links li a {
 	display: block;
-	text-align: center;
 	padding: 10px 0;
+
+	text-align: center;
 	text-decoration: none;
+	text-transform: uppercase;
+
 	font-size: 1.2rem;
 	font-weight: bold;
-	text-transform: uppercase;
 }
 
 .nav-links li a:hover,
@@ -81,19 +106,27 @@ li {
 }
 
 .tag {
+	padding: 0.5em 1em;
+
 	border: dotted 1px #a1a1a1;
 	border-radius: 0.5em;
-	padding: 0.5em 1em;
+
 	font-size: 1.15em;
 	background-color: #f8fcfd;
 }
 
+.mainNavigation > div {
+	display: flex;
+}
+
 @media screen and (min-width: 636px) {
 	.nav-links {
-		margin-left: 5em;
-		display: block;
 		position: static;
+		display: flex;
+
 		width: auto;
+		margin-left: 5em;
+
 		background: none;
 	}
 
@@ -107,5 +140,9 @@ li {
 
 	.hamburger {
 		display: none;
+	}
+
+	.mainNavigation {
+		display: flex;
 	}
 }
