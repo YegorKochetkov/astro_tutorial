@@ -6,8 +6,16 @@ html {
 		background-color: #0d0950;
 		color: #fff;
 
-		& a {
+		& .nav-links a {
 			color: beige;
+		}
+
+		& .tags a {
+			color: #00539f;
+		}
+
+		& a {
+			color: aquamarine;
 		}
 	}
 }
