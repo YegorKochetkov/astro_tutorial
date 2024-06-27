@@ -123,8 +123,21 @@ button {
 	background-color: #f8fcfd;
 }
 
+.mainNavigation,
 .mainNavigation > div {
 	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.count {
+	padding: 10px 0;
+
+	text-align: center;
+	text-transform: uppercase;
+
+	font-size: 1.2rem;
+	font-weight: bold;
 }
 
 @media screen and (min-width: 636px) {

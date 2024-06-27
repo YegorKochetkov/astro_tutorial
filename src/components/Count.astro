@@ -1,0 +1,19 @@
+---
+import { counterState as counter } from "../scripts/countStore.js";
+---
+
+<div id="count" class="count">Count: {counter.val}</div>
+
+<script>
+	import van from "../scripts/van-1.5.0.min.js";
+	import { counterState as count } from "../scripts/countStore.js";
+	const { div } = van.tags;
+
+	const CurrCount = () => {
+		return div({ class: "count" }, "Count: ", count);
+	};
+
+	document.addEventListener("astro:page-load", () => {
+		document.querySelector("#count")!.replaceWith(CurrCount());
+	});
+</script>
