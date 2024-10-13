@@ -1,25 +1,69 @@
 ---
 import { counterState as counter } from "../scripts/countStore.js";
+const buttonPadding = `${counter.val}rem`;
 ---
 
-<div id="counter">❤️ {counter.val}</div>
+<style is:global define:vars={{ buttonPadding }}>
+	.counter {
+		display: flex;
+		flex-direction: row;
+		justify-content: left;
+		align-items: center;
+		gap: 0.5rem;
+
+		font-size: 1.5rem;
+		& button {
+			padding: var(--buttonPadding);
+		}
+	}
+</style>
+
+<div id="counterFallback" class="counter">
+	❤️ {counter.val}
+	<button disabled>👍</button>
+	<button disabled>👎</button>
+</div>
+
 <script>
 	import van from "../scripts/van-1.5.0.min.js";
 	import { counterState as counter } from "../scripts/countStore.js";
 
 	const { button, div } = van.tags;
+	const likesCount = van.derive(() => `❤️ ${counter.val} `);
+	const padding = van.derive(() => {
+		if (counter.val > 3) {
+			return 3;
+		}
+
+		if (counter.val < 1) {
+			return 1;
+		}
+
+		return counter.val;
+	});
 
 	const Counter = () => {
 		return div(
-			"❤️ ",
-			counter,
-			" ",
-			button({ onclick: () => ++counter.val }, "👍"),
-			button({ onclick: () => --counter.val }, "👎"),
+			{ class: "counter" },
+			likesCount,
+			button(
+				{
+					onclick: () => counter.val++,
+					style: () => `--buttonPadding: ${padding.val}rem`,
+				},
+				"👍",
+			),
+			button(
+				{
+					onclick: () => counter.val--,
+					style: () => `--buttonPadding: ${padding.val}rem`,
+				},
+				"👎",
+			),
 		);
 	};
 
 	document.addEventListener("astro:page-load", () => {
-		document.querySelector("#counter")!.replaceWith(Counter());
+		document.querySelector("#counterFallback")!.replaceWith(Counter());
 	});
 </script>

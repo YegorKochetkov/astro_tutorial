@@ -2,6 +2,20 @@
 import { counterState as counter } from "../scripts/countStore.js";
 ---
 
+<style is:global>
+	.count {
+		padding: 15px 20px;
+		min-width: max-content;
+		align-self: flex-start;
+
+		text-align: center;
+		text-transform: uppercase;
+
+		font-size: 1.2rem;
+		font-weight: bold;
+	}
+</style>
+
 <div id="count" class="count">Count: {counter.val}</div>
 
 <script>
