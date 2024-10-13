@@ -23,8 +23,7 @@ html {
 body {
 	width: 100%;
 
-	margin: 0 auto;
-	max-width: 80ch;
+	max-width: 90ch;
 	padding: 1rem;
 
 	line-height: 1.5;
@@ -85,6 +84,7 @@ button {
 .nav-links li a {
 	display: block;
 	padding: 10px 0;
+	min-width: max-content;
 
 	text-align: center;
 	text-decoration: none;
@@ -130,20 +130,11 @@ button {
 	gap: 1rem;
 }
 
-.count {
-	padding: 10px 0;
-
-	text-align: center;
-	text-transform: uppercase;
-
-	font-size: 1.2rem;
-	font-weight: bold;
-}
-
 @media screen and (min-width: 636px) {
 	.nav-links {
 		position: static;
 		display: flex;
+		flex-wrap: wrap;
 
 		width: auto;
 		margin-left: 5em;
