@@ -19,6 +19,61 @@ const buttonPadding = `${counter.val}rem`;
 			opacity: 0.5;
 		}
 	}
+
+	.counter-display {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		height: 1.5em;
+		overflow: hidden;
+	}
+
+	.counter-number {
+		position: absolute;
+		left: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		transition: transform 0.3s ease-in-out;
+		will-change: transform;
+		white-space: nowrap;
+	}
+
+	/* Анимации для увеличения (вверх -> снизу) */
+	.counter-number.slide-out-up {
+		transform: translateY(-150%);
+	}
+
+	.counter-number.slide-in-from-down {
+		transform: translateY(50%);
+	}
+
+	/* Анимации для уменьшения (вниз -> сверху) */
+	.counter-number.slide-out-down {
+		transform: translateY(50%);
+	}
+
+	.counter-number.slide-in-from-up {
+		transform: translateY(-150%);
+	}
+
+	.counter-number.visible {
+		transform: translateY(-50%);
+	}
+
+	.counter-emoji {
+		position: relative;
+		margin-right: 0.25rem;
+		z-index: 1;
+	}
+
+	.counter-number-container {
+		position: relative;
+		display: inline-block;
+		min-width: 1ch;
+		height: 1.5em;
+		line-height: 1.5em;
+		width: auto;
+	}
 </style>
 
 <div id="counterFallback" class="counter" inert>
@@ -31,8 +86,13 @@ const buttonPadding = `${counter.val}rem`;
 	import van from "../scripts/van-1.5.0.min.js";
 	import { counterState as counter } from "../scripts/countStore.js";
 
-	const { button, div } = van.tags;
-	const likesCount = van.derive(() => `❤️ ${counter.val} `);
+	const { button, div, span } = van.tags;
+
+	let displayedNumber = counter.val;
+	let numberContainer: HTMLElement | null = null;
+	let isAnimating = false;
+	let animationQueue: { value: number; direction: "up" | "down" }[] = [];
+
 	const padding = van.derive(() => {
 		if (counter.val > 3) {
 			return 3;
@@ -45,26 +105,135 @@ const buttonPadding = `${counter.val}rem`;
 		return counter.val;
 	});
 
+	const updateContainerWidth = (value: number) => {
+		if (numberContainer) {
+			const digits =
+				Math.abs(value).toString().length + (value < 0 ? 1 : 0);
+			numberContainer.style.width = `${digits}ch`;
+		}
+	};
+
+	const processAnimationQueue = () => {
+		if (isAnimating || animationQueue.length === 0 || !numberContainer) {
+			return;
+		}
+
+		const { value: newValue, direction } = animationQueue.shift()!;
+
+		if (newValue === displayedNumber) {
+			processAnimationQueue();
+			return;
+		}
+
+		isAnimating = true;
+		displayedNumber = newValue;
+
+		updateContainerWidth(newValue);
+
+		const oldNumberElement = numberContainer.querySelector(
+			".counter-number.visible"
+		);
+		if (!oldNumberElement) {
+			isAnimating = false;
+			processAnimationQueue();
+			return;
+		}
+
+		// Выбираем классы анимации в зависимости от направления
+		const slideOutClass =
+			direction === "up" ? "slide-out-up" : "slide-out-down";
+		const slideInClass =
+			direction === "up" ? "slide-in-from-down" : "slide-in-from-up";
+
+		const newNumberElement = span(
+			{ class: `counter-number ${slideInClass}` },
+			newValue.toString()
+		);
+
+		numberContainer.appendChild(newNumberElement);
+
+		requestAnimationFrame(() => {
+			oldNumberElement.classList.remove("visible");
+			oldNumberElement.classList.add(slideOutClass);
+
+			requestAnimationFrame(() => {
+				newNumberElement.classList.remove(slideInClass);
+				newNumberElement.classList.add("visible");
+			});
+		});
+
+		setTimeout(() => {
+			if (oldNumberElement && oldNumberElement.parentElement) {
+				oldNumberElement.parentElement.removeChild(oldNumberElement);
+			}
+			isAnimating = false;
+			processAnimationQueue();
+		}, 300);
+	};
+
+	const queueNumberChange = (newValue: number) => {
+		// Определяем направление изменения
+		const direction = newValue > displayedNumber ? "up" : "down";
+
+		if (animationQueue.length > 0) {
+			// Заменяем последний элемент в очереди, сохраняя правильное направление
+			const lastQueuedValue =
+				animationQueue[animationQueue.length - 1].value;
+			const finalDirection = newValue > lastQueuedValue ? "up" : "down";
+			animationQueue[animationQueue.length - 1] = {
+				value: newValue,
+				direction: finalDirection,
+			};
+		} else {
+			animationQueue.push({ value: newValue, direction });
+		}
+
+		processAnimationQueue();
+	};
+
 	const Counter = () => {
+		const numberContainerElement = div(
+			{ class: "counter-number-container" },
+			span({ class: "counter-number visible" }, counter.val.toString())
+		);
+
+		const counterDisplay = div(
+			{ class: "counter-display" },
+			span({ class: "counter-emoji" }, "❤️"),
+			numberContainerElement
+		);
+
+		setTimeout(() => {
+			numberContainer = numberContainerElement;
+			updateContainerWidth(counter.val);
+		}, 0);
+
 		return div(
 			{ class: "counter" },
-			likesCount,
+			counterDisplay,
 			button(
 				{
-					onclick: () => counter.val++,
+					onclick: () => {
+						counter.val++;
+						queueNumberChange(counter.val);
+					},
 					style: () => `--buttonPadding: ${padding.val}rem`,
 				},
-				"👍",
+				"👍"
 			),
 			button(
 				{
-					onclick: () => counter.val--,
+					onclick: () => {
+						counter.val--;
+						queueNumberChange(counter.val);
+					},
 					style: () => `--buttonPadding: ${padding.val}rem`,
 				},
-				"👎",
-			),
+				"👎"
+			)
 		);
 	};
+
 	document.addEventListener("astro:page-load", () => {
 		document.querySelector("#counterFallback")!.replaceWith(Counter());
 	});
