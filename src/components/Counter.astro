@@ -12,6 +12,7 @@ const buttonPadding = `${counter.val}rem`;
 		gap: 0.5rem;
 
 		font-size: 1.5rem;
+
 		& button {
 			padding: var(--buttonPadding);
 		}
@@ -38,7 +39,7 @@ const buttonPadding = `${counter.val}rem`;
 		white-space: nowrap;
 	}
 
-	/* Анимации для увеличения (вверх -> снизу) */
+	/* Анимации при увеличении значения (вверх -> снизу) */
 	.counter-number.slide-out-up {
 		transform: translateY(-150%);
 	}
@@ -47,7 +48,7 @@ const buttonPadding = `${counter.val}rem`;
 		transform: translateY(50%);
 	}
 
-	/* Анимации для уменьшения (вниз -> сверху) */
+	/* Анимации при уменьшения значения (вниз -> сверху) */
 	.counter-number.slide-out-down {
 		transform: translateY(50%);
 	}
