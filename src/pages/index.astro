@@ -1,5 +1,6 @@
 ---
 import Counter from "../components/Counter.astro";
+import CounterPreact from "../components/CounterPreact";
 import Greeting from "../components/Greeting";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
@@ -11,4 +12,5 @@ const pageTitle = "Astro tutorial";
 	<Greeting client:load messages={["Hej", "Hallo", "Hola", "Habari"]} />
 	<br />
 	<Counter />
+	<CounterPreact client:load />
 </BaseLayout>
