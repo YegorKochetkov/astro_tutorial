@@ -68,12 +68,12 @@ const buttonPadding = `${counter.val}rem`;
 	}
 
 	.counter-number-container {
+		--containerWidth: 1ch;
 		position: relative;
 		display: inline-block;
-		min-width: 1ch;
+		min-width: var(--containerWidth);
 		height: 1.5em;
 		line-height: 1.5em;
-		width: auto;
 	}
 </style>
 
@@ -108,8 +108,7 @@ const buttonPadding = `${counter.val}rem`;
 
 	const updateContainerWidth = (value: number) => {
 		if (numberContainer) {
-			const digits =
-				Math.abs(value).toString().length + (value < 0 ? 1 : 0);
+			const digits = Math.abs(value).toString().length + (value < 0 ? 1 : 0);
 			numberContainer.style.width = `${digits}ch`;
 		}
 	};
@@ -131,9 +130,7 @@ const buttonPadding = `${counter.val}rem`;
 
 		updateContainerWidth(newValue);
 
-		const oldNumberElement = numberContainer.querySelector(
-			".counter-number.visible"
-		);
+		const oldNumberElement = numberContainer.querySelector(".counter-number.visible");
 
 		if (!oldNumberElement) {
 			isAnimating = false;
@@ -142,15 +139,10 @@ const buttonPadding = `${counter.val}rem`;
 		}
 
 		// Выбираем классы анимации в зависимости от направления
-		const slideOutClass =
-			direction === "up" ? "slide-out-up" : "slide-out-down";
-		const slideInClass =
-			direction === "up" ? "slide-in-from-down" : "slide-in-from-up";
+		const slideOutClass = direction === "up" ? "slide-out-up" : "slide-out-down";
+		const slideInClass = direction === "up" ? "slide-in-from-down" : "slide-in-from-up";
 
-		const newNumberElement = span(
-			{ class: `counter-number ${slideInClass}` },
-			newValue.toString()
-		);
+		const newNumberElement = span({ class: `counter-number ${slideInClass}` }, newValue.toString());
 
 		numberContainer.appendChild(newNumberElement);
 
@@ -179,8 +171,7 @@ const buttonPadding = `${counter.val}rem`;
 
 		if (animationQueue.length > 0) {
 			// Заменяем последний элемент в очереди, сохраняя правильное направление
-			const lastQueuedValue =
-				animationQueue[animationQueue.length - 1].value;
+			const lastQueuedValue = animationQueue[animationQueue.length - 1].value;
 			const finalDirection = newValue > lastQueuedValue ? "up" : "down";
 			animationQueue[animationQueue.length - 1] = {
 				value: newValue,
@@ -194,16 +185,9 @@ const buttonPadding = `${counter.val}rem`;
 	};
 
 	const Counter = () => {
-		const numberContainerElement = div(
-			{ class: "counter-number-container" },
-			span({ class: "counter-number visible" }, counter.val.toString())
-		);
+		const numberContainerElement = div({ class: "counter-number-container" }, span({ class: "counter-number visible" }, counter.val.toString()));
 
-		const counterDisplay = div(
-			{ class: "counter-display" },
-			span({ class: "counter-emoji" }, "❤️"),
-			numberContainerElement
-		);
+		const counterDisplay = div({ class: "counter-display" }, span({ class: "counter-emoji" }, "❤️"), numberContainerElement);
 
 		setTimeout(() => {
 			numberContainer = numberContainerElement;

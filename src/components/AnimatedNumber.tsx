@@ -25,16 +25,8 @@ interface AnimatedNumberComponentProps {
 	disableAnimation?: boolean;
 }
 
-export default function AnimatedNumber({
-	value,
-	onAnimationComplete,
-	duration = 300,
-	containerClassName = "",
-	disableAnimation = false,
-}: AnimatedNumberComponentProps) {
-	const [animatedNumbers, setAnimatedNumbers] = useState<
-		AnimatedNumberProps[]
-	>([
+export default function AnimatedNumber({ value, onAnimationComplete, duration = 300, containerClassName = "", disableAnimation = false }: AnimatedNumberComponentProps) {
+	const [animatedNumbers, setAnimatedNumbers] = useState<AnimatedNumberProps[]>([
 		{
 			value: value,
 			direction: null,
@@ -43,29 +35,31 @@ export default function AnimatedNumber({
 		},
 	]);
 	const [isAnimating, setIsAnimating] = useState(false);
-	const [animationQueue, setAnimationQueue] = useState<AnimationQueueItem[]>(
-		[]
-	);
+	const [animationQueue, setAnimationQueue] = useState<AnimationQueueItem[]>([]);
 	const numberContainerRef = useRef<HTMLDivElement>(null);
 	const prevValueRef = useRef(value);
 	const timeoutRef = useRef<number | null>(null);
 
 	// Update container width based on number of digits
 	const updateContainerWidth = (value: number) => {
-		if (numberContainerRef.current) {
-			const digits =
-				Math.abs(value).toString().length + (value < 0 ? 1 : 0);
-			numberContainerRef.current.style.width = `${digits}ch`;
-		}
+		if (!numberContainerRef.current) return;
+
+		const absoluteValue = Math.abs(value);
+		const numberOfDigits = absoluteValue.toString().length;
+		const hasNegativeSign = value < 0;
+		const digits = numberOfDigits + (hasNegativeSign ? 1 : 0);
+		numberContainerRef.current.style.width = `${digits}ch`;
+	};
+	const updateContainerWidthBeforeDigitAnimation = (value: number, nextValue: number) => {
+		const currentDigitLength = String(value).length;
+		const nextDigitLength = String(nextValue).length;
+		const needMoreSpaceForNewDigit = nextDigitLength >= currentDigitLength;
+		needMoreSpaceForNewDigit && updateContainerWidth(nextValue);
 	};
 
 	// Process animation queue
 	const processAnimationQueue = () => {
-		if (
-			isAnimating ||
-			animationQueue.length === 0 ||
-			!numberContainerRef.current
-		) {
+		if (isAnimating || animationQueue.length === 0 || !numberContainerRef.current) {
 			return;
 		}
 
@@ -80,12 +74,8 @@ export default function AnimatedNumber({
 
 		setIsAnimating(true);
 
-		const slideOutClass =
-			nextItem.direction === "up" ? "slide-out-up" : "slide-out-down";
-		const slideInClass =
-			nextItem.direction === "up"
-				? "slide-in-from-down"
-				: "slide-in-from-up";
+		const slideOutClass = nextItem.direction === "up" ? "slide-out-up" : "slide-out-down";
+		const slideInClass = nextItem.direction === "up" ? "slide-in-from-down" : "slide-in-from-up";
 
 		setAnimatedNumbers((prev) => {
 			const updated = prev.map((num) => ({
@@ -120,12 +110,10 @@ export default function AnimatedNumber({
 			This two-step approach with nested requestAnimationFrame provides smooth animation that is properly synchronized with the browser's render cycle and helps avoid visual artifacts when changing numbers in the counter.
 		*/
 		requestAnimationFrame(() => {
-			updateContainerWidth(nextItem.value);
 			requestAnimationFrame(() => {
 				setAnimatedNumbers((prev) =>
 					prev.map((num) =>
-						num.value === nextItem.value &&
-						num.direction === nextItem.direction
+						num.value === nextItem.value && num.direction === nextItem.direction
 							? {
 									...num,
 									isVisible: true,
@@ -143,11 +131,8 @@ export default function AnimatedNumber({
 		}
 
 		timeoutRef.current = window.setTimeout(() => {
-			setAnimatedNumbers((prev) =>
-				prev.filter(
-					(num) => num.isVisible || num.value === nextItem.value
-				)
-			);
+			setAnimatedNumbers((prev) => prev.filter((num) => num.isVisible || num.value === nextItem.value));
+			updateContainerWidth(nextItem.value);
 			setIsAnimating(false);
 			onAnimationComplete?.();
 			timeoutRef.current = null;
@@ -184,10 +169,7 @@ export default function AnimatedNumber({
 			const finalDirection = newValue > lastQueued.value ? "up" : "down";
 
 			// Replace the last item with the new value and direction
-			return [
-				...prevQueue.slice(0, -1),
-				{ value: newValue, direction: finalDirection },
-			];
+			return [...prevQueue.slice(0, -1), { value: newValue, direction: finalDirection }];
 		});
 	};
 
@@ -209,17 +191,19 @@ export default function AnimatedNumber({
 
 	// Initialize container width and handle value changes
 	useEffect(() => {
-		updateContainerWidth(value);
+		updateContainerWidthBeforeDigitAnimation(prevValueRef.current, value);
 
 		if (prevValueRef.current !== value) {
 			if (disableAnimation) {
 				// Update immediately without animation
-				setAnimatedNumbers([{
-					value: value,
-					direction: null,
-					isVisible: true,
-					className: "counter-number visible",
-				}]);
+				setAnimatedNumbers([
+					{
+						value: value,
+						direction: null,
+						isVisible: true,
+						className: "counter-number visible",
+					},
+				]);
 				onAnimationComplete?.();
 			} else {
 				queueNumberChange(value);
@@ -235,10 +219,7 @@ export default function AnimatedNumber({
 	));
 
 	return (
-		<div 
-			className={`counter-number-container ${containerClassName}`.trim()} 
-			ref={numberContainerRef}
-		>
+		<div className={`counter-number-container ${containerClassName}`.trim()} ref={numberContainerRef} style={{ "--containerWidth": String(value).length + "ch" }}>
 			{numbers}
 		</div>
 	);
