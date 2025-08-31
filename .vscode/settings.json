@@ -1,4 +1,11 @@
 {
-	"cSpell.words": ["Astro", "Preact"],
-	"Codegeex.RepoIndex": true
+	"cSpell.words": [
+		"Astro",
+		"frontmatter",
+		"HTMX",
+		"Preact",
+		"Qwik",
+		"transerfing"
+	],
+	"oxc.enable": true
 }
