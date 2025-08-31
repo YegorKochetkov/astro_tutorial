@@ -195,6 +195,7 @@ export default function AnimatedNumber({ value, onAnimationComplete, duration = 
 
 		if (prevValueRef.current !== value) {
 			if (disableAnimation) {
+				updateContainerWidth(value);
 				// Update immediately without animation
 				setAnimatedNumbers([
 					{
