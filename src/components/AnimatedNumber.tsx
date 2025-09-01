@@ -1,4 +1,21 @@
-import { useRef, useEffect, useState } from "preact/hooks";
+import { useRef, useEffect, useState, useCallback } from "preact/hooks";
+
+const ANIMATION_CONFIG = {
+	DEFAULT_DURATION: 300,
+	STYLES: {
+		COUNTER_NUMBER_CONTAINER: "counter-number-container",
+		COUNTER_NUMBER: "counter-number",
+		VISIBLE: "counter-number visible",
+		SLIDE_OUT_UP: "slide-out-up",
+		SLIDE_OUT_DOWN: "slide-out-down",
+		SLIDE_IN_FROM_DOWN: "slide-in-from-down",
+		SLIDE_IN_FROM_UP: "slide-in-from-up",
+	},
+	DIRECTION: {
+		UP: "up",
+		DOWN: "down",
+	},
+} as const;
 
 // Type for animation queue items
 interface AnimationQueueItem {
@@ -7,7 +24,7 @@ interface AnimationQueueItem {
 }
 
 // Type for animated number props
-interface AnimatedNumberProps {
+interface AnimatedDigitProps {
 	value: number;
 	direction: "up" | "down" | null;
 	isVisible: boolean;
@@ -26,152 +43,156 @@ interface AnimatedNumberComponentProps {
 }
 
 export default function AnimatedNumber({ value, onAnimationComplete, duration = 300, containerClassName = "", disableAnimation = false }: AnimatedNumberComponentProps) {
-	const [animatedNumbers, setAnimatedNumbers] = useState<AnimatedNumberProps[]>([
-		{
-			value: value,
-			direction: null,
-			isVisible: true,
-			className: "counter-number visible",
-		},
-	]);
+	const [animatedDigits, setAnimatedDigits] = useState<AnimatedDigitProps[]>([{ value: value, direction: null, isVisible: true, className: ANIMATION_CONFIG.STYLES.VISIBLE }]);
 	const [isAnimating, setIsAnimating] = useState(false);
-	const [animationQueue, setAnimationQueue] = useState<AnimationQueueItem[]>([]);
-	const numberContainerRef = useRef<HTMLDivElement>(null);
-	const prevValueRef = useRef(value);
-	const timeoutRef = useRef<number | null>(null);
+	const { digitContainerRef, updateContainerWidth, updateContainerWidthBeforeDigitAnimation } = useContainerWidth();
+	const { startAnimation, updateAnimationClasses, completeAnimation } = useAnimation(setAnimatedDigits, setIsAnimating, updateContainerWidth, onAnimationComplete, duration);
+	const { animationQueue, processAnimationQueue, queueDigitChange } = useAnimationQueue(isAnimating, animatedDigits, startAnimation, updateAnimationClasses, completeAnimation);
 
-	// Update container width based on number of digits
-	const updateContainerWidth = (value: number) => {
-		if (!numberContainerRef.current) return;
+	const prevValueRef = useRef(value);
+
+	// Process animation queue when it changes (only if animations are enabled)
+	useEffect(() => {
+		if (!disableAnimation && !isAnimating && animationQueue.length > 0) {
+			processAnimationQueue();
+		}
+	}, [animationQueue, isAnimating, disableAnimation, processAnimationQueue]);
+
+	// Initialize container width and handle value changes
+	useEffect(() => {
+		updateContainerWidthBeforeDigitAnimation(prevValueRef.current, value);
+
+		if (prevValueRef.current !== value) {
+			if (disableAnimation) {
+				updateContainerWidth(value);
+				// Update immediately without animation
+				setAnimatedDigits([
+					{
+						value: value,
+						direction: null,
+						isVisible: true,
+						className: ANIMATION_CONFIG.STYLES.VISIBLE,
+					},
+				]);
+				onAnimationComplete?.();
+			} else {
+				queueDigitChange(value);
+			}
+			prevValueRef.current = value;
+		}
+	}, [value, disableAnimation]);
+
+	const digits = animatedDigits.map((num, index) => (
+		<span key={`${num.value}-${index}`} className={num.className}>
+			{num.value}
+		</span>
+	));
+
+	return (
+		<div className={`${ANIMATION_CONFIG.STYLES.COUNTER_NUMBER_CONTAINER} ${containerClassName}`} ref={digitContainerRef} style={{ "--containerWidth": String(value).length + "ch" }}>
+			{digits}
+		</div>
+	);
+}
+
+function useContainerWidth() {
+	const digitContainerRef = useRef<HTMLDivElement>(null);
+
+	function updateContainerWidth(value: number) {
+		if (!digitContainerRef.current) return;
 
 		const absoluteValue = Math.abs(value);
 		const numberOfDigits = absoluteValue.toString().length;
 		const hasNegativeSign = value < 0;
 		const digits = numberOfDigits + (hasNegativeSign ? 1 : 0);
-		numberContainerRef.current.style.width = `${digits}ch`;
-	};
-	const updateContainerWidthBeforeDigitAnimation = (value: number, nextValue: number) => {
+		digitContainerRef.current.style.width = `${digits}ch`;
+	}
+
+	function updateContainerWidthBeforeDigitAnimation(value: number, nextValue: number) {
 		const currentDigitLength = String(value).length;
 		const nextDigitLength = String(nextValue).length;
 		const needMoreSpaceForNewDigit = nextDigitLength >= currentDigitLength;
 		needMoreSpaceForNewDigit && updateContainerWidth(nextValue);
-	};
+	}
 
-	// Process animation queue
-	const processAnimationQueue = () => {
-		if (isAnimating || animationQueue.length === 0 || !numberContainerRef.current) {
-			return;
-		}
+	return { digitContainerRef, updateContainerWidth, updateContainerWidthBeforeDigitAnimation };
+}
 
-		const [nextItem, ...remainingItems] = animationQueue;
-		setAnimationQueue(remainingItems);
+function useAnimation(
+	setAnimatedDigits: React.Dispatch<React.SetStateAction<AnimatedDigitProps[]>>,
+	setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>,
+	updateContainerWidth: (value: number) => void,
+	onAnimationComplete?: () => void,
+	duration?: number
+) {
+	const timeoutRef = useRef<number | null>(null);
 
-		const currentVisible = animatedNumbers.find((num) => num.isVisible);
-		if (!currentVisible) return;
+	const startAnimation = useCallback(
+		(nextItem: AnimationQueueItem) => {
+			setIsAnimating(true);
 
-		// Use strict equality and handle zero properly
-		if (nextItem.value === currentVisible.value) return;
+			const slideOutClass = nextItem.direction === ANIMATION_CONFIG.DIRECTION.UP ? ANIMATION_CONFIG.STYLES.SLIDE_OUT_UP : ANIMATION_CONFIG.STYLES.SLIDE_OUT_DOWN;
 
-		setIsAnimating(true);
+			const slideInClass = nextItem.direction === ANIMATION_CONFIG.DIRECTION.UP ? ANIMATION_CONFIG.STYLES.SLIDE_IN_FROM_DOWN : ANIMATION_CONFIG.STYLES.SLIDE_IN_FROM_UP;
 
-		const slideOutClass = nextItem.direction === "up" ? "slide-out-up" : "slide-out-down";
-		const slideInClass = nextItem.direction === "up" ? "slide-in-from-down" : "slide-in-from-up";
-
-		setAnimatedNumbers((prev) => {
-			const updated = prev.map((num) => ({
-				...num,
-				isVisible: false,
-				className: `counter-number ${slideOutClass}`,
-			}));
-
-			return [
-				...updated,
-				{
-					value: nextItem.value,
-					direction: nextItem.direction,
+			setAnimatedDigits((prev) => {
+				const updated = prev.map((num) => ({
+					...num,
 					isVisible: false,
-					className: `counter-number ${slideInClass}`,
-				},
-			];
-		});
+					className: `${ANIMATION_CONFIG.STYLES.COUNTER_NUMBER} ${slideOutClass}`,
+				}));
 
-		/* 
-			Why nested requestAnimationFrame is needed:
-			Animation phase separation:
-			- In the previous code (before this fragment) we added a new element with a class for entrance animation (slideInClass)
-			- The first requestAnimationFrame gives the browser time to apply initial styles
-			- The second requestAnimationFrame runs only after the browser has rendered the first state, and changes classes to complete the animation
-			Prevention of visual artifacts:
-			- If we used only one requestAnimationFrame, the browser could combine both operations in a single render cycle
-			- The nested call ensures that changes occur in different animation frames, providing a smooth visual effect
-			In summary, we:
-			First set the initial state (element with entrance class)
-			Then in the next frame change it to the final state (visible element)
-			This two-step approach with nested requestAnimationFrame provides smooth animation that is properly synchronized with the browser's render cycle and helps avoid visual artifacts when changing numbers in the counter.
-		*/
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				setAnimatedNumbers((prev) =>
-					prev.map((num) =>
-						num.value === nextItem.value && num.direction === nextItem.direction
-							? {
-									...num,
-									isVisible: true,
-									className: "counter-number visible",
-							  }
-							: num
-					)
-				);
+				return [
+					...updated,
+					{
+						value: nextItem.value,
+						direction: nextItem.direction,
+						isVisible: false,
+						className: `${ANIMATION_CONFIG.STYLES.COUNTER_NUMBER} ${slideInClass}`,
+					},
+				];
 			});
-		});
+		},
+		[setAnimatedDigits, setIsAnimating]
+	);
 
-		// Clear any existing timeout to prevent memory leaks
-		if (timeoutRef.current) {
-			clearTimeout(timeoutRef.current);
-		}
+	const updateAnimationClasses = useCallback(
+		(nextItem: AnimationQueueItem) => {
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					setAnimatedDigits((prev) =>
+						prev.map((num) =>
+							num.value === nextItem.value && num.direction === nextItem.direction
+								? {
+										...num,
+										isVisible: true,
+										className: ANIMATION_CONFIG.STYLES.VISIBLE,
+								  }
+								: num
+						)
+					);
+				});
+			});
+		},
+		[setAnimatedDigits]
+	);
 
-		timeoutRef.current = window.setTimeout(() => {
-			setAnimatedNumbers((prev) => prev.filter((num) => num.isVisible || num.value === nextItem.value));
-			updateContainerWidth(nextItem.value);
-			setIsAnimating(false);
-			onAnimationComplete?.();
-			timeoutRef.current = null;
-		}, duration);
-	};
-
-	// Queue number change with animation
-	const queueNumberChange = (newValue: number) => {
-		const currentVisible = animatedNumbers.find((n) => n.isVisible);
-		if (!currentVisible) return;
-
-		const currentValue = currentVisible.value;
-
-		// Use strict equality check including for zero
-		if (newValue === currentValue) return;
-
-		const direction = newValue > currentValue ? "up" : "down";
-
-		setAnimationQueue((prevQueue) => {
-			// If queue is empty, just add the new value
-			if (prevQueue.length === 0) {
-				return [{ value: newValue, direction }];
+	const completeAnimation = useCallback(
+		(nextItem: AnimationQueueItem) => {
+			if (timeoutRef.current) {
+				clearTimeout(timeoutRef.current);
 			}
 
-			// Get the last queued value
-			const lastQueued = prevQueue[prevQueue.length - 1];
-
-			// If the new value is the same as the last queued, do nothing
-			if (newValue === lastQueued.value) {
-				return prevQueue;
-			}
-
-			// Calculate direction based on last queued value, not current value
-			const finalDirection = newValue > lastQueued.value ? "up" : "down";
-
-			// Replace the last item with the new value and direction
-			return [...prevQueue.slice(0, -1), { value: newValue, direction: finalDirection }];
-		});
-	};
+			timeoutRef.current = window.setTimeout(() => {
+				setAnimatedDigits((prev) => prev.filter((num) => num.isVisible || num.value === nextItem.value));
+				updateContainerWidth(nextItem.value);
+				setIsAnimating(false);
+				onAnimationComplete?.();
+				timeoutRef.current = null;
+			}, duration);
+		},
+		[setAnimatedDigits, setIsAnimating, updateContainerWidth, onAnimationComplete, duration]
+	);
 
 	// Cleanup timeout on unmount
 	useEffect(() => {
@@ -182,46 +203,70 @@ export default function AnimatedNumber({ value, onAnimationComplete, duration = 
 		};
 	}, []);
 
-	// Process animation queue when it changes (only if animations are enabled)
-	useEffect(() => {
-		if (!disableAnimation && !isAnimating && animationQueue.length > 0) {
-			processAnimationQueue();
+	return {
+		startAnimation,
+		updateAnimationClasses,
+		completeAnimation,
+	};
+}
+
+function useAnimationQueue(
+	isAnimating: boolean,
+	animatedDigits: AnimatedDigitProps[],
+	startAnimation: (nextItem: AnimationQueueItem) => void,
+	updateAnimationClasses: (nextItem: AnimationQueueItem) => void,
+	completeAnimation: (nextItem: AnimationQueueItem) => void
+) {
+	const [animationQueue, setAnimationQueue] = useState<AnimationQueueItem[]>([]);
+
+	const processAnimationQueue = useCallback(() => {
+		if (isAnimating || animationQueue.length === 0) {
+			return;
 		}
-	}, [animationQueue, isAnimating, animatedNumbers, disableAnimation]);
 
-	// Initialize container width and handle value changes
-	useEffect(() => {
-		updateContainerWidthBeforeDigitAnimation(prevValueRef.current, value);
+		const [nextItem, ...remainingItems] = animationQueue;
+		setAnimationQueue(remainingItems);
 
-		if (prevValueRef.current !== value) {
-			if (disableAnimation) {
-				updateContainerWidth(value);
-				// Update immediately without animation
-				setAnimatedNumbers([
-					{
-						value: value,
-						direction: null,
-						isVisible: true,
-						className: "counter-number visible",
-					},
-				]);
-				onAnimationComplete?.();
-			} else {
-				queueNumberChange(value);
-			}
-			prevValueRef.current = value;
-		}
-	}, [value, disableAnimation]);
+		const currentVisible = animatedDigits.find((num) => num.isVisible);
+		if (!currentVisible) return;
+		if (nextItem.value === currentVisible.value) return;
 
-	const numbers = animatedNumbers.map((num, index) => (
-		<span key={`${num.value}-${index}`} className={num.className}>
-			{num.value}
-		</span>
-	));
+		startAnimation(nextItem);
+		updateAnimationClasses(nextItem);
+		completeAnimation(nextItem);
+	}, [isAnimating, animationQueue, animatedDigits, startAnimation, updateAnimationClasses, completeAnimation]);
 
-	return (
-		<div className={`counter-number-container ${containerClassName}`.trim()} ref={numberContainerRef} style={{ "--containerWidth": String(value).length + "ch" }}>
-			{numbers}
-		</div>
+	const queueDigitChange = useCallback(
+		(newValue: number) => {
+			const currentVisible = animatedDigits.find((n) => n.isVisible);
+			if (!currentVisible) return;
+
+			const currentValue = currentVisible.value;
+
+			if (newValue === currentValue) return;
+
+			const direction = newValue > currentValue ? ANIMATION_CONFIG.DIRECTION.UP : ANIMATION_CONFIG.DIRECTION.DOWN;
+
+			setAnimationQueue((prevQueue) => {
+				if (prevQueue.length === 0) {
+					return [{ value: newValue, direction }];
+				}
+
+				const lastQueued = prevQueue[prevQueue.length - 1];
+				if (newValue === lastQueued.value) {
+					return prevQueue;
+				}
+
+				const finalDirection = newValue > lastQueued.value ? ANIMATION_CONFIG.DIRECTION.UP : ANIMATION_CONFIG.DIRECTION.DOWN;
+				return [...prevQueue.slice(0, -1), { value: newValue, direction: finalDirection }];
+			});
+		},
+		[animatedDigits]
 	);
+
+	return {
+		animationQueue,
+		processAnimationQueue,
+		queueDigitChange,
+	};
 }
