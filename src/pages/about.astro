@@ -8,15 +8,7 @@ const identity = {
 	occupation: "Full Stack Developer",
 	hobbies: ["trading", "anime", "transerfing"],
 };
-const skills = [
-	"HTML",
-	"CSS",
-	"JavaScript",
-	"TypeScript",
-	"React",
-	"HTMX",
-	"Qwik",
-];
+const skills = ["HTML", "CSS", "JavaScript", "TypeScript", "React", "HTMX", "Qwik"];
 
 const finished = true;
 const happy = true;
@@ -27,9 +19,7 @@ const fontWeight = "bold";
 const textTransform = "uppercase";
 ---
 
-<style
-	define:vars={{ skillColorLight, skillColorDark, fontWeight, textTransform }}
->
+<style define:vars={{ skillColorLight, skillColorDark, fontWeight, textTransform }}>
 	.skill {
 		color: var(--skillColorLight);
 		font-weight: var(--fontWeight);
@@ -63,11 +53,5 @@ const textTransform = "uppercase";
 	</ul>
 
 	{happy && <p>I am happy to be learning Astro!</p>}
-	{
-		finished ? (
-			<p>I finished this tutorial!</p>
-		) : (
-			<p>I'm not finished this tutorial yet!</p>
-		)
-	}
+	{finished ? <p>I finished this tutorial!</p> : <p>I'm not finished this tutorial yet!</p>}
 </BaseLayout>
