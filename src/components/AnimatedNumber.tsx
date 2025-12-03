@@ -47,9 +47,11 @@ export default function AnimatedNumber({ value, onAnimationComplete, duration = 
   // They will have corresponding classes, direction of animation for the number and flag of what number is currently displayed
   const [animatedDigits, setAnimatedDigits] = useState<AnimatedDigitProps[]>([{ value: value, direction: null, isVisible: true, className: ANIMATION_CONFIG.STYLES.VISIBLE }]);
   const [isAnimating, setIsAnimating] = useState(false);
+
   // If we need to increase the width of the number container, it should be done before animating the numbers
   // If we need to decrease the width of the number container, it should be done after animating the numbers
   const { digitContainerRef, updateContainerWidth, updateContainerWidthBeforeDigitAnimation } = useContainerWidth();
+  
   // Animation of numbers and updating the numbers themselves that need to be animated are separated into different hooks to achieve smooth animation when numbers change rapidly
   const { startAnimation, updateAnimationClasses, completeAnimation } = useAnimation(setAnimatedDigits, setIsAnimating, updateContainerWidth, onAnimationComplete, duration);
   const { animationQueue, processAnimationQueue, queueDigitChange } = useAnimationQueue(isAnimating, animatedDigits, startAnimation, updateAnimationClasses, completeAnimation);

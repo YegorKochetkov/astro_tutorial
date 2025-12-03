@@ -39,7 +39,6 @@ const buttonPadding = `${counter.val}rem`;
 		white-space: nowrap;
 	}
 
-	/* Анимации при увеличении значения (вверх -> снизу) */
 	.counter-number.slide-out-up {
 		transform: translateY(-150%);
 	}
@@ -48,7 +47,6 @@ const buttonPadding = `${counter.val}rem`;
 		transform: translateY(50%);
 	}
 
-	/* Анимации при уменьшения значения (вниз -> сверху) */
 	.counter-number.slide-out-down {
 		transform: translateY(50%);
 	}
@@ -74,6 +72,8 @@ const buttonPadding = `${counter.val}rem`;
 		min-width: var(--containerWidth);
 		height: 1.5em;
 		line-height: 1.5em;
+		transition: width 0.2s ease-in-out;
+		will-change: width;
 	}
 </style>
 
@@ -113,6 +113,13 @@ const buttonPadding = `${counter.val}rem`;
 		}
 	};
 
+	function updateContainerWidthBeforeDigitAnimation(value: number, nextValue: number) {
+		const currentDigitLength = String(value).length;
+		const nextDigitLength = String(nextValue).length;
+		const needMoreSpaceForNewDigit = nextDigitLength >= currentDigitLength;
+		needMoreSpaceForNewDigit && updateContainerWidth(nextValue);
+	}
+
 	const processAnimationQueue = () => {
 		if (isAnimating || animationQueue.length === 0 || !numberContainer) {
 			return;
@@ -125,10 +132,9 @@ const buttonPadding = `${counter.val}rem`;
 			return;
 		}
 
+		updateContainerWidthBeforeDigitAnimation(displayedNumber, newValue);
 		isAnimating = true;
 		displayedNumber = newValue;
-
-		updateContainerWidth(newValue);
 
 		const oldNumberElement = numberContainer.querySelector(".counter-number.visible");
 
@@ -138,7 +144,6 @@ const buttonPadding = `${counter.val}rem`;
 			return;
 		}
 
-		// Выбираем классы анимации в зависимости от направления
 		const slideOutClass = direction === "up" ? "slide-out-up" : "slide-out-down";
 		const slideInClass = direction === "up" ? "slide-in-from-down" : "slide-in-from-up";
 
@@ -160,17 +165,17 @@ const buttonPadding = `${counter.val}rem`;
 			if (oldNumberElement && oldNumberElement.parentElement) {
 				oldNumberElement.parentElement.removeChild(oldNumberElement);
 			}
+			
+			updateContainerWidth(counter.val);
 			isAnimating = false;
 			processAnimationQueue();
 		}, 300);
 	};
 
 	const queueNumberChange = (newValue: number) => {
-		// Определяем направление изменения
 		const direction = newValue > displayedNumber ? "up" : "down";
 
 		if (animationQueue.length > 0) {
-			// Заменяем последний элемент в очереди, сохраняя правильное направление
 			const lastQueuedValue = animationQueue[animationQueue.length - 1].value;
 			const finalDirection = newValue > lastQueuedValue ? "up" : "down";
 			animationQueue[animationQueue.length - 1] = {
@@ -216,6 +221,16 @@ const buttonPadding = `${counter.val}rem`;
 					style: () => `--buttonPadding: ${padding.val}rem`,
 				},
 				"👎"
+			),
+			button(
+				{
+					onclick: () => {
+						counter.val = 0;
+						queueNumberChange(counter.val);
+					},
+					style: () => `--buttonPadding: ${padding.val}rem`,
+				},
+				"🔄"
 			)
 		);
 	};
