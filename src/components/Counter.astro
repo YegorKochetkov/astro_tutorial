@@ -152,10 +152,9 @@ const buttonPadding = `${counter.val}rem`;
 		numberContainer.appendChild(newNumberElement);
 
 		requestAnimationFrame(() => {
-			oldNumberElement.classList.remove("visible");
-			oldNumberElement.classList.add(slideOutClass);
-
 			requestAnimationFrame(() => {
+				oldNumberElement.classList.remove("visible");
+				oldNumberElement.classList.add(slideOutClass);
 				newNumberElement.classList.remove(slideInClass);
 				newNumberElement.classList.add("visible");
 			});
