@@ -36,19 +36,20 @@ export default function AnimatedNumber({
     if (needMoreSpaceForNewDigit) updateContainerWidth(nextValue);
   };
 
-  const processAnimationQueue = () => {
+  const processAnimationQueue = (previousValue?: number) => {
     if (isAnimating || animationQueueRef.current.length === 0 || !containerRef.current) {
       return;
     }
 
     const nextItem = animationQueueRef.current.shift()!;
+    const currentDisplay = previousValue ?? displayedNumber;
 
-    if (nextItem.value === displayedNumber) {
-      processAnimationQueue();
+    if (nextItem.value === currentDisplay) {
+      processAnimationQueue(currentDisplay);
       return;
     }
 
-    updateContainerWidthBeforeAnimation(displayedNumber, nextItem.value);
+    updateContainerWidthBeforeAnimation(currentDisplay, nextItem.value);
     setIsAnimating(true);
     setDisplayedNumber(nextItem.value);
 
@@ -56,7 +57,7 @@ export default function AnimatedNumber({
 
     if (!oldNumberElement) {
       setIsAnimating(false);
-      processAnimationQueue();
+      processAnimationQueue(nextItem.value);
       return;
     }
 
@@ -83,10 +84,10 @@ export default function AnimatedNumber({
         oldNumberElement.parentNode.removeChild(oldNumberElement);
       }
 
-      updateContainerWidth(value);
+      updateContainerWidth(nextItem.value);
       setIsAnimating(false);
       onAnimationComplete?.();
-      processAnimationQueue();
+      processAnimationQueue(nextItem.value);
     }, duration);
   };
 
