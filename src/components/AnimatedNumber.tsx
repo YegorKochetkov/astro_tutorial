@@ -13,118 +13,134 @@ export default function AnimatedNumber({
   onAnimationComplete,
   duration = 300,
   containerClassName = "",
-  disableAnimation = false
+  disableAnimation = false,
 }: AnimatedNumberProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [displayedNumber, setDisplayedNumber] = useState(value);
   const [isAnimating, setIsAnimating] = useState(false);
-  const animationQueueRef = useRef<{ value: number; direction: "up" | "down" }[]>([]);
+  const queueRef = useRef<{ value: number; direction: "up" | "down" }[]>([]);
 
-  // Update container width
+  // Helper to calculate width in characters
+  const calculateWidth = (val: number): string => {
+    const digits = Math.abs(val).toString().length + (val < 0 ? 1 : 0);
+    return `${digits}ch`;
+  };
+
   const updateContainerWidth = (val: number) => {
     if (containerRef.current) {
-      const digits = Math.abs(val).toString().length + (val < 0 ? 1 : 0);
-      containerRef.current.style.width = `${digits}ch`;
+      containerRef.current.style.width = calculateWidth(val);
     }
   };
 
-  // Update container width before animation if needed
-  const updateContainerWidthBeforeAnimation = (currentValue: number, nextValue: number) => {
-    const currentDigitLength = String(currentValue).length;
-    const nextDigitLength = String(nextValue).length;
-    const needMoreSpaceForNewDigit = nextDigitLength >= currentDigitLength;
-    if (needMoreSpaceForNewDigit) updateContainerWidth(nextValue);
+  const adjustWidthForTransition = (currentValue: number, nextValue: number) => {
+    const currentWidth = calculateWidth(currentValue);
+    const nextWidth = calculateWidth(nextValue);
+
+    // Expand immediately if next value is wider
+    if (nextWidth > currentWidth) {
+      updateContainerWidth(nextValue);
+    }
   };
 
-  const processAnimationQueue = (previousValue?: number) => {
-    if (isAnimating || animationQueueRef.current.length === 0 || !containerRef.current) {
+  const processQueue = (previousValue?: number) => {
+    if (isAnimating || queueRef.current.length === 0 || !containerRef.current) {
       return;
     }
 
-    const nextItem = animationQueueRef.current.shift()!;
+    const nextItem = queueRef.current.shift()!;
     const currentDisplay = previousValue ?? displayedNumber;
 
     if (nextItem.value === currentDisplay) {
-      processAnimationQueue(currentDisplay);
+      processQueue(currentDisplay);
       return;
     }
 
-    updateContainerWidthBeforeAnimation(currentDisplay, nextItem.value);
+    adjustWidthForTransition(currentDisplay, nextItem.value);
     setIsAnimating(true);
     setDisplayedNumber(nextItem.value);
 
-    const oldNumberElement = containerRef.current.querySelector(".counter-number.visible") as HTMLElement;
+    // Find the element currently visible
+    const oldNumberElement = containerRef.current.querySelector(
+      ".counter-number.visible"
+    ) as HTMLElement;
 
     if (!oldNumberElement) {
+      // Fallback if DOM is out of sync
       setIsAnimating(false);
-      processAnimationQueue(nextItem.value);
+      processQueue(nextItem.value);
       return;
     }
 
-    const slideOutClass = nextItem.direction === "up" ? "slide-out-up" : "slide-out-down";
-    const slideInClass = nextItem.direction === "up" ? "slide-in-from-down" : "slide-in-from-up";
+    // Determine animation classes
+    const isUp = nextItem.direction === "up";
+    const slideOutClass = isUp ? "slide-out-up" : "slide-out-down";
+    const slideInClass = isUp ? "slide-in-from-down" : "slide-in-from-up";
 
+    // Create new element
     const newNumberElement = document.createElement("span");
     newNumberElement.className = `counter-number ${slideInClass}`;
     newNumberElement.textContent = nextItem.value.toString();
 
     containerRef.current.appendChild(newNumberElement);
 
+    // Trigger animation
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        oldNumberElement.classList.remove("visible");
-        oldNumberElement.classList.add(slideOutClass);
-        newNumberElement.classList.remove(slideInClass);
-        newNumberElement.classList.add("visible");
+        oldNumberElement.classList.replace("visible", slideOutClass);
+        newNumberElement.classList.replace(slideInClass, "visible");
       });
     });
 
+    // Cleanup after duration
     setTimeout(() => {
-      if (oldNumberElement && oldNumberElement.parentNode) {
+      if (oldNumberElement?.parentNode) {
         oldNumberElement.parentNode.removeChild(oldNumberElement);
       }
 
+      // If shrinking (e.g. 10 -> 9), update width *after* animation
       updateContainerWidth(nextItem.value);
       setIsAnimating(false);
       onAnimationComplete?.();
-      processAnimationQueue(nextItem.value);
+      processQueue(nextItem.value);
     }, duration);
   };
 
-  const queueDigitChange = (newValue: number) => {
+  const enqueueUpdate = (newValue: number) => {
     const direction = newValue > displayedNumber ? "up" : "down";
 
-    if (animationQueueRef.current.length > 0) {
-      const lastQueued = animationQueueRef.current[animationQueueRef.current.length - 1];
-      if (newValue !== lastQueued.value) {
-        const finalDirection = newValue > lastQueued.value ? "up" : "down";
-        animationQueueRef.current[animationQueueRef.current.length - 1] = {
+    if (queueRef.current.length > 0) {
+      const lastItem = queueRef.current[queueRef.current.length - 1];
+      // Skip if pending value is same as new value
+      if (newValue !== lastItem.value) {
+        // Optimally update the last queued item instead of stacking
+        // This acts as a debounce/throttle for rapid updates
+        const finalDirection = newValue > lastItem.value ? "up" : "down";
+        queueRef.current[queueRef.current.length - 1] = {
           value: newValue,
-          direction: finalDirection
+          direction: finalDirection,
         };
       }
     } else {
-      animationQueueRef.current.push({ value: newValue, direction });
+      queueRef.current.push({ value: newValue, direction });
     }
 
-    processAnimationQueue();
+    processQueue();
   };
 
   useEffect(() => {
-    updateContainerWidthBeforeAnimation(displayedNumber, value);
-
+    // Immediate update if animation disabled
     if (displayedNumber !== value) {
       if (disableAnimation) {
         updateContainerWidth(value);
         setDisplayedNumber(value);
         onAnimationComplete?.();
       } else {
-        queueDigitChange(value);
+        enqueueUpdate(value);
       }
     }
   }, [value, disableAnimation]);
 
-  // Initialize container width
+  // Initial setup
   useEffect(() => {
     updateContainerWidth(value);
   }, []);
@@ -134,7 +150,6 @@ export default function AnimatedNumber({
       ref={containerRef}
       className={`counter-number-container ${containerClassName}`}
     >
-
       <span className="counter-number visible">{displayedNumber}</span>
     </div>
   );
