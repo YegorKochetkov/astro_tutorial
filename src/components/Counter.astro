@@ -106,18 +106,27 @@ const buttonPadding = `${counter.val}rem`;
 		return counter.val;
 	});
 
+	// Helper to calculate width in characters
+	const calculateWidth = (val: number): string => {
+		const digits = Math.abs(val).toString().length + (val < 0 ? 1 : 0);
+		return `${digits}ch`;
+	};
+
 	const updateContainerWidth = (value: number) => {
 		if (numberContainer) {
 			const digits = Math.abs(value).toString().length + (value < 0 ? 1 : 0);
-			numberContainer.style.width = `${digits}ch`;
+			numberContainer.style.width = calculateWidth(value);
 		}
 	};
 
-	function updateContainerWidthBeforeDigitAnimation(value: number, nextValue: number) {
-		const currentDigitLength = String(value).length;
-		const nextDigitLength = String(nextValue).length;
-		const needMoreSpaceForNewDigit = nextDigitLength >= currentDigitLength;
-		needMoreSpaceForNewDigit && updateContainerWidth(nextValue);
+	function adjustWidthForTransition(value: number, nextValue: number) {
+		const currentWidth = calculateWidth(value);
+		const nextWidth = calculateWidth(nextValue);
+
+		// Expand immediately if next value is wider
+		if (nextWidth > currentWidth) {
+			updateContainerWidth(nextValue);
+		}
 	}
 
 	const processAnimationQueue = () => {
@@ -132,7 +141,7 @@ const buttonPadding = `${counter.val}rem`;
 			return;
 		}
 
-		updateContainerWidthBeforeDigitAnimation(displayedNumber, newValue);
+		adjustWidthForTransition(displayedNumber, newValue);
 		isAnimating = true;
 		displayedNumber = newValue;
 
@@ -144,8 +153,10 @@ const buttonPadding = `${counter.val}rem`;
 			return;
 		}
 
-		const slideOutClass = direction === "up" ? "slide-out-up" : "slide-out-down";
-		const slideInClass = direction === "up" ? "slide-in-from-down" : "slide-in-from-up";
+		// Determine animation classes
+		const isUp = direction === "up";
+		const slideOutClass = isUp ? "slide-out-up" : "slide-out-down";
+		const slideInClass = isUp ? "slide-in-from-down" : "slide-in-from-up";
 
 		const newNumberElement = span({ class: `counter-number ${slideInClass}` }, newValue.toString());
 
@@ -153,10 +164,8 @@ const buttonPadding = `${counter.val}rem`;
 
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
-				oldNumberElement.classList.remove("visible");
-				oldNumberElement.classList.add(slideOutClass);
-				newNumberElement.classList.remove(slideInClass);
-				newNumberElement.classList.add("visible");
+				oldNumberElement.classList.replace("visible", slideOutClass);
+				newNumberElement.classList.replace(slideInClass, "visible");
 			});
 		});
 
@@ -171,7 +180,7 @@ const buttonPadding = `${counter.val}rem`;
 		}, 300);
 	};
 
-	const queueNumberChange = (newValue: number) => {
+	const enqueueUpdate = (newValue: number) => {
 		const direction = newValue > displayedNumber ? "up" : "down";
 
 		if (animationQueue.length > 0) {
@@ -217,7 +226,7 @@ const buttonPadding = `${counter.val}rem`;
 				{
 					onclick: () => {
 						counter.val++;
-						queueNumberChange(counter.val);
+						enqueueUpdate(counter.val);
 					},
 					style: () => `--buttonPadding: ${padding.val}rem`,
 				},
@@ -227,7 +236,7 @@ const buttonPadding = `${counter.val}rem`;
 				{
 					onclick: () => {
 						counter.val--;
-						queueNumberChange(counter.val);
+						enqueueUpdate(counter.val);
 					},
 					style: () => `--buttonPadding: ${padding.val}rem`,
 				},
@@ -237,7 +246,7 @@ const buttonPadding = `${counter.val}rem`;
 				{
 					onclick: () => {
 						counter.val = 0;
-						queueNumberChange(counter.val);
+						enqueueUpdate(counter.val);
 					},
 					style: () => `--buttonPadding: ${padding.val}rem`,
 				},
