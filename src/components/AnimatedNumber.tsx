@@ -36,7 +36,6 @@ export default function AnimatedNumber({
     if (needMoreSpaceForNewDigit) updateContainerWidth(nextValue);
   };
 
-  // Process animation queue
   const processAnimationQueue = () => {
     if (isAnimating || animationQueueRef.current.length === 0 || !containerRef.current) {
       return;
@@ -91,7 +90,6 @@ export default function AnimatedNumber({
     }, duration);
   };
 
-  // Queue digit change
   const queueDigitChange = (newValue: number) => {
     const direction = newValue > displayedNumber ? "up" : "down";
 
@@ -111,7 +109,6 @@ export default function AnimatedNumber({
     processAnimationQueue();
   };
 
-  // Handle value changes
   useEffect(() => {
     updateContainerWidthBeforeAnimation(displayedNumber, value);
 

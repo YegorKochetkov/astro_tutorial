@@ -189,9 +189,21 @@ const buttonPadding = `${counter.val}rem`;
 	};
 
 	const Counter = () => {
-		const numberContainerElement = div({ class: "counter-number-container" }, span({ class: "counter-number visible" }, counter.val.toString()));
+		const numberContainerElement = div(
+			{ class: "counter-number-container" }, 
+			span(
+				{ class: "counter-number visible" }, 
+				counter.val.toString()
+			)
+		);
 
-		const counterDisplay = div({ class: "counter-display" }, span({ class: "counter-emoji" }, "❤️"), numberContainerElement);
+		const counterDisplay = div(
+			{ class: "counter-display" }, 
+			span(
+				{ class: "counter-emoji" }, "❤️"
+			), 
+			numberContainerElement
+		);
 
 		setTimeout(() => {
 			numberContainer = numberContainerElement;
