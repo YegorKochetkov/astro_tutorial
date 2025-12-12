@@ -112,20 +112,20 @@ const buttonPadding = `${counter.val}rem`;
 		return `${digits}ch`;
 	};
 
-	const updateContainerWidth = (value: number) => {
+	const setContainerWidth = (value: number) => {
 		if (numberContainer) {
 			const digits = Math.abs(value).toString().length + (value < 0 ? 1 : 0);
 			numberContainer.style.width = calculateWidth(value);
 		}
 	};
 
-	function adjustWidthForTransition(value: number, nextValue: number) {
+	function setContainerWidthBeforeAnimation(value: number, nextValue: number) {
 		const currentWidth = calculateWidth(value);
 		const nextWidth = calculateWidth(nextValue);
 
 		// Expand immediately if next value is wider
 		if (nextWidth > currentWidth) {
-			updateContainerWidth(nextValue);
+			setContainerWidth(nextValue);
 		}
 	}
 
@@ -137,11 +137,10 @@ const buttonPadding = `${counter.val}rem`;
 		const { value: newValue, direction } = animationQueue.shift()!;
 
 		if (newValue === displayedNumber) {
-			processAnimationQueue();
 			return;
 		}
 
-		adjustWidthForTransition(displayedNumber, newValue);
+		setContainerWidthBeforeAnimation(displayedNumber, newValue);
 		isAnimating = true;
 		displayedNumber = newValue;
 
@@ -174,7 +173,7 @@ const buttonPadding = `${counter.val}rem`;
 				oldNumberElement.parentElement.removeChild(oldNumberElement);
 			}
 			
-			updateContainerWidth(counter.val);
+			setContainerWidth(counter.val);
 			isAnimating = false;
 			processAnimationQueue();
 		}, 300);
@@ -183,15 +182,20 @@ const buttonPadding = `${counter.val}rem`;
 	const enqueueUpdate = (newValue: number) => {
 		const direction = newValue > displayedNumber ? "up" : "down";
 
-		if (animationQueue.length > 0) {
-			const lastQueuedValue = animationQueue[animationQueue.length - 1].value;
-			const finalDirection = newValue > lastQueuedValue ? "up" : "down";
-			animationQueue[animationQueue.length - 1] = {
-				value: newValue,
-				direction: finalDirection,
-			};
-		} else {
+		// If queue is empty, simply add the new value
+		if (animationQueue.length === 0) {
 			animationQueue.push({ value: newValue, direction });
+		} else {
+			// Update the last queued item instead of stacking
+			// This acts as a debounce/throttle for rapid updates
+			const lastItem = animationQueue[animationQueue.length - 1];
+			if (newValue !== lastItem.value) {
+				const finalDirection = newValue > lastItem.value ? "up" : "down";
+				animationQueue[animationQueue.length - 1] = {
+					value: newValue,
+					direction: finalDirection,
+				};
+			}
 		}
 
 		processAnimationQueue();
@@ -216,7 +220,7 @@ const buttonPadding = `${counter.val}rem`;
 
 		setTimeout(() => {
 			numberContainer = numberContainerElement;
-			updateContainerWidth(counter.val);
+			setContainerWidth(counter.val);
 		}, 0);
 
 		return div(

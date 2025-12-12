@@ -26,19 +26,19 @@ export default function AnimatedNumber({
 		return `${digits}ch`;
 	};
 
-	const updateContainerWidth = (val: number) => {
+	const setContainerWidth = (val: number) => {
 		if (containerRef.current) {
 			containerRef.current.style.width = calculateWidth(val);
 		}
 	};
 
-	const adjustWidthForTransition = (currentValue: number, nextValue: number) => {
+	const setContainerWidthBeforeAnimation = (currentValue: number, nextValue: number) => {
 		const currentWidth = calculateWidth(currentValue);
 		const nextWidth = calculateWidth(nextValue);
 
 		// Expand immediately if next value is wider
 		if (nextWidth > currentWidth) {
-			updateContainerWidth(nextValue);
+			setContainerWidth(nextValue);
 		}
 	};
 
@@ -51,11 +51,10 @@ export default function AnimatedNumber({
 		const currentDisplay = previousValue ?? displayedNumber;
 
 		if (nextItem.value === currentDisplay) {
-			processQueue(currentDisplay);
 			return;
 		}
 
-		adjustWidthForTransition(currentDisplay, nextItem.value);
+		setContainerWidthBeforeAnimation(currentDisplay, nextItem.value);
 		setIsAnimating(true);
 		setDisplayedNumber(nextItem.value);
 
@@ -98,7 +97,7 @@ export default function AnimatedNumber({
 			}
 
 			// If shrinking (e.g. 10 -> 9), update width *after* animation
-			updateContainerWidth(nextItem.value);
+			setContainerWidth(nextItem.value);
 			setIsAnimating(false);
 			onAnimationComplete?.();
 			processQueue(nextItem.value);
@@ -108,20 +107,20 @@ export default function AnimatedNumber({
 	const enqueueUpdate = (newValue: number) => {
 		const direction = newValue > displayedNumber ? "up" : "down";
 
-		if (queueRef.current.length > 0) {
+		// If queue is empty, simply add the new value
+		if (queueRef.current.length === 0) {
+			queueRef.current.push({ value: newValue, direction });
+		} else {
+			// Update the last queued item instead of stacking
+			// This acts as a debounce/throttle for rapid updates
 			const lastItem = queueRef.current[queueRef.current.length - 1];
-			// Skip if pending value is same as new value
 			if (newValue !== lastItem.value) {
-				// Optimally update the last queued item instead of stacking
-				// This acts as a debounce/throttle for rapid updates
 				const finalDirection = newValue > lastItem.value ? "up" : "down";
 				queueRef.current[queueRef.current.length - 1] = {
 					value: newValue,
 					direction: finalDirection,
 				};
 			}
-		} else {
-			queueRef.current.push({ value: newValue, direction });
 		}
 
 		processQueue();
@@ -131,7 +130,7 @@ export default function AnimatedNumber({
 		// Immediate update if animation disabled
 		if (displayedNumber !== value) {
 			if (disableAnimation) {
-				updateContainerWidth(value);
+				setContainerWidth(value);
 				setDisplayedNumber(value);
 				onAnimationComplete?.();
 			} else {
@@ -140,9 +139,8 @@ export default function AnimatedNumber({
 		}
 	}, [value, disableAnimation]);
 
-	// Initial setup
 	useEffect(() => {
-		updateContainerWidth(value);
+		setContainerWidth(value);
 	}, []);
 
 	return (
